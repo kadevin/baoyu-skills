@@ -191,6 +191,21 @@ npx add-skill jimliu/baoyu-skills
 | `vintage` | 做旧纸张美学，历史文档风格 | 历史、传记、人文 |
 | `watercolor` | 柔和手绘水彩纹理，自然温暖 | 生活方式、健康、旅行 |
 
+**风格预览**：
+
+| | | |
+|:---:|:---:|:---:|
+| ![blueprint](./screenshots/slide-deck-styles/blueprint.webp) | ![bold-editorial](./screenshots/slide-deck-styles/bold-editorial.webp) | ![corporate](./screenshots/slide-deck-styles/corporate.webp) |
+| blueprint | bold-editorial | corporate |
+| ![dark-atmospheric](./screenshots/slide-deck-styles/dark-atmospheric.webp) | ![editorial-infographic](./screenshots/slide-deck-styles/editorial-infographic.webp) | ![fantasy-animation](./screenshots/slide-deck-styles/fantasy-animation.webp) |
+| dark-atmospheric | editorial-infographic | fantasy-animation |
+| ![intuition-machine](./screenshots/slide-deck-styles/intuition-machine.webp) | ![minimal](./screenshots/slide-deck-styles/minimal.webp) | ![notion](./screenshots/slide-deck-styles/notion.webp) |
+| intuition-machine | minimal | notion |
+| ![pixel-art](./screenshots/slide-deck-styles/pixel-art.webp) | ![scientific](./screenshots/slide-deck-styles/scientific.webp) | ![sketch-notes](./screenshots/slide-deck-styles/sketch-notes.webp) |
+| pixel-art | scientific | sketch-notes |
+| ![vector-illustration](./screenshots/slide-deck-styles/vector-illustration.webp) | ![vintage](./screenshots/slide-deck-styles/vintage.webp) | ![watercolor](./screenshots/slide-deck-styles/watercolor.webp) |
+| vector-illustration | vintage | watercolor |
+
 生成完成后，所有幻灯片会自动合并为 `.pptx` 文件，方便分享。
 
 ### baoyu-comic

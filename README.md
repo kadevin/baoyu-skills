@@ -191,6 +191,21 @@ Generate professional slide deck images from content. Creates comprehensive outl
 | `vintage` | Aged-paper aesthetic, historical document styling | Historical, heritage, biography |
 | `watercolor` | Soft hand-painted textures, natural warmth | Lifestyle, wellness, travel |
 
+**Style Previews**:
+
+| | | |
+|:---:|:---:|:---:|
+| ![blueprint](./screenshots/slide-deck-styles/blueprint.webp) | ![bold-editorial](./screenshots/slide-deck-styles/bold-editorial.webp) | ![corporate](./screenshots/slide-deck-styles/corporate.webp) |
+| blueprint | bold-editorial | corporate |
+| ![dark-atmospheric](./screenshots/slide-deck-styles/dark-atmospheric.webp) | ![editorial-infographic](./screenshots/slide-deck-styles/editorial-infographic.webp) | ![fantasy-animation](./screenshots/slide-deck-styles/fantasy-animation.webp) |
+| dark-atmospheric | editorial-infographic | fantasy-animation |
+| ![intuition-machine](./screenshots/slide-deck-styles/intuition-machine.webp) | ![minimal](./screenshots/slide-deck-styles/minimal.webp) | ![notion](./screenshots/slide-deck-styles/notion.webp) |
+| intuition-machine | minimal | notion |
+| ![pixel-art](./screenshots/slide-deck-styles/pixel-art.webp) | ![scientific](./screenshots/slide-deck-styles/scientific.webp) | ![sketch-notes](./screenshots/slide-deck-styles/sketch-notes.webp) |
+| pixel-art | scientific | sketch-notes |
+| ![vector-illustration](./screenshots/slide-deck-styles/vector-illustration.webp) | ![vintage](./screenshots/slide-deck-styles/vintage.webp) | ![watercolor](./screenshots/slide-deck-styles/watercolor.webp) |
+| vector-illustration | vintage | watercolor |
+
 After generation, slides are automatically merged into a `.pptx` file for easy sharing.
 
 ### baoyu-comic
