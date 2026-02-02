@@ -11,6 +11,7 @@ import {
   UsageLimitExceeded,
 } from './exceptions.js';
 import { Candidate, Gem, GeneratedImage, ModelOutput, RPCData, WebImage } from './types/index.js';
+import type { FullSizeImageMeta } from './types/index.js';
 import {
   extract_json_from_response,
   get_access_token,
@@ -375,6 +376,9 @@ export class GeminiClient extends GemMixin {
       try {
         const candidate_list = get_nested_value<unknown[]>(body_json, [4], []);
         const out: Candidate[] = [];
+        
+        // Extract metadata early so we can use it for fullSizeMeta
+        const metadata = get_nested_value<string[]>(body_json, [1], []);
 
         for (let candidate_index = 0; candidate_index < candidate_list.length; candidate_index++) {
           const candidate = candidate_list[candidate_index];
@@ -441,6 +445,10 @@ export class GeminiClient extends GemMixin {
               if (!Array.isArray(g)) continue;
               const url = get_nested_value<string | null>(g, [0, 3, 3], null);
               if (!url) continue;
+              
+              // Extract image token for 2K download (starts with $AS)
+              const imageToken = get_nested_value<string | null>(g, [0, 3, 5], null);
+              
               const img_num = get_nested_value<number | null>(g, [3, 6], null);
               const title = img_num ? `[Generated Image ${img_num}]` : '[Generated Image]';
               const alt_list = get_nested_value<unknown[]>(g, [3, 5], []);
@@ -448,13 +456,36 @@ export class GeminiClient extends GemMixin {
                 (typeof alt_list[img_index] === 'string' ? (alt_list[img_index] as string) : null) ??
                 (typeof alt_list[0] === 'string' ? (alt_list[0] as string) : '') ??
                 '';
-              generated_images.push(new GeneratedImage(url, title, alt, this.proxy, this.cookies));
+              
+              // Build full size metadata if we have the required info
+              const fullSizeMeta = imageToken && metadata.length >= 2 ? {
+                imageToken,
+                prompt: prompt,
+                responseId: metadata[1] || '',
+                candidateId: rcid,
+                conversationId: metadata[0] || '',
+              } : undefined;
+              
+              generated_images.push(new GeneratedImage(url, title, alt, this.proxy, this.cookies, fullSizeMeta));
             }
 
             if (generated_images.length === 0) {
+              // Fallback: collect URLs without full size metadata
               const urls = collect_strings(img_candidate, (s) => s.startsWith('https://lh3.googleusercontent.com/gg-dl/'), 4);
-              for (const url of urls) {
-                generated_images.push(new GeneratedImage(url, '[Generated Image]', '', this.proxy, this.cookies));
+              // Also try to collect image tokens
+              const tokens = collect_strings(img_candidate, (s) => s.startsWith('$AS'), 4);
+              
+              for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                const imageToken = tokens[i] || null;
+                const fullSizeMeta = imageToken && metadata.length >= 2 ? {
+                  imageToken,
+                  prompt: prompt,
+                  responseId: metadata[1] || '',
+                  candidateId: rcid,
+                  conversationId: metadata[0] || '',
+                } : undefined;
+                generated_images.push(new GeneratedImage(url, '[Generated Image]', '', this.proxy, this.cookies, fullSizeMeta));
               }
             }
           }
@@ -466,7 +497,6 @@ export class GeminiClient extends GemMixin {
           throw new GeminiError('Failed to generate contents. No output data found in response.');
         }
 
-        const metadata = get_nested_value<string[]>(body_json, [1], []);
         const output = new ModelOutput({ metadata, candidates: out });
 
         if (chat instanceof ChatSession) chat.last_output = output;
@@ -522,6 +552,167 @@ export class GeminiClient extends GemMixin {
     }
 
     return res;
+  }
+
+  /**
+   * Request full-size (2K) version of a generated image
+   * @param image The GeneratedImage with fullSizeMeta
+   * @param outputPath Path to save the full-size image
+   * @param verbose Whether to log progress
+   * @returns Path to the saved image, or null if failed
+   */
+  async requestFullSizeImage(
+    image: GeneratedImage,
+    outputPath: string,
+    verbose: boolean = false,
+  ): Promise<string | null> {
+    if (!image.canDownloadFullSize()) {
+      if (verbose) logger.warning('Image does not have full-size metadata, falling back to standard download');
+      return await image.save(
+        require('path').dirname(outputPath),
+        require('path').basename(outputPath),
+        this.cookies,
+        verbose,
+        false,
+        true,
+      );
+    }
+
+    const meta = image.fullSizeMeta!;
+    if (!this.access_token) throw new APIError('Missing access token.');
+
+    // Generate a random request ID (16 chars alphanumeric)
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let requestId = '';
+    for (let i = 0; i < 16; i++) {
+      requestId += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    // Build the inner payload structure for c8o8Fe RPC
+    const innerPayload = [
+      [
+        [null, null, null, [null, null, null, null, null, meta.imageToken]],
+        ['http://googleusercontent.com/image_generation_content/0', 0],
+        null,
+        [19, meta.prompt],
+        null, null, null, null, null,
+        requestId,
+      ],
+      [meta.responseId, meta.candidateId, meta.conversationId, null, requestId],
+      1, 0, 1,
+    ];
+
+    const payload = new RPCData('c8o8Fe', JSON.stringify(innerPayload), 'generic');
+    
+    if (verbose) logger.info('Requesting full-size image generation...');
+    
+    const res = await this._batch_execute([payload]);
+    const text = await res.text();
+    
+    // Debug: log response snippet
+    if (verbose) {
+      logger.info(`Response length: ${text.length}`);
+    }
+    
+    // Parse response to extract the full-size image URL
+    // The RPC returns a gg-dl URL, we need to convert it to rd-gg-dl for 2K download
+    let urlMatch = text.match(/https:\/\/lh3\.googleusercontent\.com\/gg-dl\/[^"\\]+/);
+    
+    if (!urlMatch) {
+      if (verbose) logger.warning('Could not find image URL in response, falling back to standard download');
+      return await image.save(
+        require('path').dirname(outputPath),
+        require('path').basename(outputPath),
+        this.cookies,
+        verbose,
+        false,
+        true,
+      );
+    }
+
+    // Convert gg-dl to rd-gg-dl and add full-size parameters
+    // Note: rd-gg-dl requires special x-browser-validation header from Chrome
+    // Try using gg-dl with size parameters first
+    const fullSizeUrl = urlMatch[0] + '=s0';
+    
+    if (verbose) logger.info(`Full-size URL: ${fullSizeUrl.slice(0, 80)}...`);
+    
+    if (!urlMatch) {
+      if (verbose) logger.warning('Could not find full-size image URL in response, falling back to standard download');
+      return await image.save(
+        require('path').dirname(outputPath),
+        require('path').basename(outputPath),
+        this.cookies,
+        verbose,
+        false,
+        true,
+      );
+    }
+
+    // Download the full-size image
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
+      'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      'Referer': 'https://gemini.google.com/',
+      'Cookie': Object.entries(this.cookies).map(([k, v]) => `${k}=${v}`).join('; '),
+    };
+
+    let downloadRes: Response | null = null;
+    let currentUrl = fullSizeUrl;
+    
+    for (let i = 0; i < 10; i++) {
+      downloadRes = await fetch_with_timeout(currentUrl, {
+        method: 'GET',
+        headers,
+        redirect: 'manual',
+        timeout_ms: 60_000,
+      });
+
+      if (downloadRes.status >= 300 && downloadRes.status < 400) {
+        const loc = downloadRes.headers.get('location');
+        if (!loc) break;
+        currentUrl = new URL(loc, currentUrl).toString();
+        continue;
+      }
+      break;
+    }
+
+    if (!downloadRes || !downloadRes.ok) {
+      if (verbose) logger.warning(`Full-size download failed (${downloadRes?.status}), falling back to standard download`);
+      return await image.save(
+        require('path').dirname(outputPath),
+        require('path').basename(outputPath),
+        this.cookies,
+        verbose,
+        false,
+        true,
+      );
+    }
+
+    const ct = downloadRes.headers.get('content-type');
+    if (ct && !ct.includes('image')) {
+      if (verbose) logger.warning(`Response is not an image (${ct}), falling back to standard download`);
+      return await image.save(
+        require('path').dirname(outputPath),
+        require('path').basename(outputPath),
+        this.cookies,
+        verbose,
+        false,
+        true,
+      );
+    }
+
+    const fs = require('fs/promises');
+    const path = require('path');
+    const dir = path.dirname(outputPath);
+    await fs.mkdir(dir, { recursive: true });
+    
+    const buf = Buffer.from(await downloadRes.arrayBuffer());
+    await fs.writeFile(outputPath, buf);
+    
+    if (verbose) logger.success(`Full-size image saved: ${outputPath} (${(buf.length / 1024 / 1024).toFixed(2)} MB)`);
+    
+    return outputPath;
   }
 }
 

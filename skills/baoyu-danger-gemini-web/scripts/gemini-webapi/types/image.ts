@@ -84,18 +84,46 @@ export class Image {
 
 export class WebImage extends Image {}
 
+/**
+ * Metadata needed for 2K image generation request
+ */
+export interface FullSizeImageMeta {
+  /** Image token starting with $AS... */
+  imageToken: string;
+  /** Original prompt used to generate the image */
+  prompt: string;
+  /** Response ID like r_xxx */
+  responseId: string;
+  /** Candidate ID like rc_xxx */
+  candidateId: string;
+  /** Conversation ID like c_xxx */
+  conversationId: string;
+}
+
 export class GeneratedImage extends Image {
+  /** Metadata for requesting 2K full-size image */
+  public fullSizeMeta?: FullSizeImageMeta;
+
   constructor(
     url: string,
     title: string,
     alt: string,
     proxy: string | null,
     public cookies: Record<string, string>,
+    fullSizeMeta?: FullSizeImageMeta,
   ) {
     super(url, title, alt, proxy);
     if (!cookies || Object.keys(cookies).length === 0) {
       throw new Error('GeneratedImage is designed to be initialized with same cookies as GeminiClient.');
     }
+    this.fullSizeMeta = fullSizeMeta;
+  }
+
+  /**
+   * Check if this image supports 2K full-size download
+   */
+  canDownloadFullSize(): boolean {
+    return !!(this.fullSizeMeta?.imageToken && this.fullSizeMeta?.conversationId);
   }
 
   async save(

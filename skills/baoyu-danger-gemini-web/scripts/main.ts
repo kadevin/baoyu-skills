@@ -12,6 +12,7 @@ type CliArgs = {
   modelId: string;
   json: boolean;
   imagePath: string | null;
+  fullSize: boolean;  // Request 2K full-size image
   referenceImages: string[];
   sessionId: string | null;
   listSessions: boolean;
@@ -76,6 +77,7 @@ Options:
   -m, --model <id>          gemini-3-pro | gemini-2.5-pro | gemini-2.5-flash (default: gemini-3-pro)
   --json                    Output JSON
   --image [path]            Generate an image and save it (default: ./generated.png)
+  --full-size, --2k         Request 2K full-size image (works with --image)
   --reference <files...>    Reference images for vision input
   --ref <files...>          Alias for --reference
   --sessionId <id>          Session ID for multi-turn conversation (agent should generate unique ID)
@@ -96,6 +98,7 @@ function parseArgs(argv: string[]): CliArgs {
     modelId: 'gemini-3-pro',
     json: false,
     imagePath: null,
+    fullSize: false,
     referenceImages: [],
     sessionId: null,
     listSessions: false,
@@ -134,6 +137,11 @@ function parseArgs(argv: string[]): CliArgs {
 
     if (a === '--list-sessions') {
       out.listSessions = true;
+      continue;
+    }
+
+    if (a === '--full-size' || a === '--2k') {
+      out.fullSize = true;
       continue;
     }
 
@@ -456,7 +464,12 @@ async function main(): Promise<void> {
       const dp = dir;
 
       if (img instanceof GeneratedImage) {
-        savedImage = await img.save(dp, fn, undefined, false, false, true);
+        if (args.fullSize && img.canDownloadFullSize()) {
+          // Request 2K full-size image via RPC
+          savedImage = await c.requestFullSizeImage(img, p, true);
+        } else {
+          savedImage = await img.save(dp, fn, undefined, false, false, true);
+        }
       } else {
         savedImage = await img.save(dp, fn, c.cookies, false, false);
       }
