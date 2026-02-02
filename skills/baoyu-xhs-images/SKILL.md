@@ -168,7 +168,9 @@ Copy and track progress:
 
 ```
 XHS Infographic Progress:
-- [ ] Step 0: Check preferences (EXTEND.md) ⚠️ REQUIRED if not found
+- [ ] Step 0: Check preferences (EXTEND.md) ⛔ BLOCKING
+  - [ ] Found → load preferences → continue
+  - [ ] Not found → run first-time setup → MUST complete before Step 1
 - [ ] Step 1: Analyze content → analysis.md
 - [ ] Step 2: Confirmation 1 - Content understanding ⚠️ REQUIRED
 - [ ] Step 3: Generate 3 outline + style variants
@@ -180,12 +182,22 @@ XHS Infographic Progress:
 ### Flow
 
 ```
-Input → Analyze → [Confirm 1] → 3 Outlines → [Confirm 2: Outline + Style + Elements] → Generate → Complete
+Input → [Step 0: Preferences] ─┬─ Found → Continue
+                               │
+                               └─ Not found → First-Time Setup ⛔ BLOCKING
+                                              │
+                                              └─ Complete setup → Save EXTEND.md → Continue
+                                                                                      │
+        ┌───────────────────────────────────────────────────────────────────────────┘
+        ↓
+Analyze → [Confirm 1] → 3 Outlines → [Confirm 2: Outline + Style + Elements] → Generate → Complete
 ```
 
-### Step 0: Load Preferences (EXTEND.md) ⚠️
+### Step 0: Load Preferences (EXTEND.md) ⛔ BLOCKING
 
-**Purpose**: Load user preferences or run first-time setup. **Do NOT skip setup if EXTEND.md not found.**
+**Purpose**: Load user preferences or run first-time setup.
+
+**CRITICAL**: If EXTEND.md not found, MUST complete first-time setup before ANY other questions or steps. Do NOT proceed to content analysis, do NOT ask about style, do NOT ask about layout — ONLY complete the preferences setup first.
 
 Use Bash to check EXTEND.md existence (priority order):
 
@@ -205,13 +217,13 @@ test -f "$HOME/.baoyu-skills/baoyu-xhs-images/EXTEND.md" && echo "user"
 │ $HOME/.baoyu-skills/baoyu-xhs-images/EXTEND.md     │ User home         │
 └────────────────────────────────────────────────────┴───────────────────┘
 
-┌───────────┬───────────────────────────────────────────────────────────────────────────┐
-│  Result   │                                  Action                                   │
-├───────────┼───────────────────────────────────────────────────────────────────────────┤
-│ Found     │ Read, parse, display summary → Continue to Step 1                         │
-├───────────┼───────────────────────────────────────────────────────────────────────────┤
-│ Not found │ ⚠️ MUST run first-time setup (see below) → Then continue to Step 1        │
-└───────────┴───────────────────────────────────────────────────────────────────────────┘
+┌───────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  Result   │                                              Action                                              │
+├───────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Found     │ Read, parse, display summary → Continue to Step 1                                                 │
+├───────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Not found │ ⛔ BLOCKING: Run first-time setup ONLY (see below) → Complete and save EXTEND.md → Then Step 1    │
+└───────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 **First-Time Setup** (when EXTEND.md not found):
 
