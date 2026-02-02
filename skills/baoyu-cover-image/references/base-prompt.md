@@ -39,8 +39,8 @@ Apply the specified rendering's characteristics:
 
 ### Text (Density Level)
 - `none`: No text elements, full visual area
-- `title-only`: Single headline (≤8 characters), 85% visual area
-- `title-subtitle`: Title + context (≤15 chars), 75% visual area
+- `title-only`: Single headline, 85% visual area
+- `title-subtitle`: Title + context, 75% visual area
 - `text-rich`: Title + subtitle + 2-4 keyword tags, 60% visual area
 
 ### Mood (Emotional Intensity)
@@ -50,17 +50,44 @@ Apply the specified rendering's characteristics:
 
 ## Text Style (When Title Included)
 
-- Title text: Large, eye-catching, max 8 characters
-- Subtitle: Secondary, max 15 characters (if title-subtitle or text-rich)
+- **Title source**: Use the exact title provided by user, or extract from source content. Do NOT invent or modify titles.
+- Title text: Large, eye-catching, faithful to source
+- Subtitle: Secondary element (if title-subtitle or text-rich)
 - Tags: 2-4 keyword badges (if text-rich)
 - Font style harmonizes with rendering style
-- **Engagement hooks**: Use numbers ("3个关键"), questions ("Why?"), contrasts ("A vs B"), pain points ("别再X了"), or suspense ("隐藏的X") for compelling titles
 
 ## Composition Guidance
 
-**Icon Vocabulary**: Represent concepts with simple, recognizable icons rather than detailed illustrations. Use the rendering style to determine icon complexity (flat-vector = geometric, hand-drawn = sketchy, etc.)
+### Layout Principles
 
-**Character Handling**: When people are needed, use simplified silhouettes or abstract representations. NO realistic faces, detailed anatomy, or photographic representations.
+- **Generous whitespace**: Maintain 40-60% breathing room; avoid cluttered compositions
+- **Visual anchor placement**: Main element centered or offset left (reserve right side for title if included)
+- **Information hierarchy**: One dominant focal point, 1-2 supporting elements, decorative accents
+- **Clean backgrounds**: Solid colors or subtle gradients; no complex textures or patterns
+
+### Icon & Symbol Vocabulary
+
+Represent concepts with simple, recognizable icons rather than detailed illustrations:
+
+| Category | Examples |
+|----------|----------|
+| Tech | Code window, gear, circuit, cloud, lock, API brackets |
+| Ideas | Lightbulb, rocket, target, puzzle, key, magnifier |
+| Communication | Speech bubble, chat dots, megaphone, mail |
+| Growth | Plant/sprout, tree, arrow, chart, mountain |
+| Tools | Wrench, pencil, brush, checklist, clock |
+
+Use the rendering style to determine icon complexity (flat-vector = geometric, hand-drawn = sketchy, etc.)
+
+Full library: [references/visual-elements.md](visual-elements.md)
+
+### Character Handling
+
+When people are needed:
+- Use simplified silhouettes or abstract stick figures
+- Symbolic representations (head + shoulders outline)
+- NO realistic faces, detailed anatomy, or photographic representations
+- Cartoon/icon style consistent with rendering choice
 
 ## Mood Application
 
@@ -76,6 +103,16 @@ Apply mood adjustments to the base palette:
 
 - Use the same language as the content provided below for any text elements
 - Match punctuation style to the content language
+
+## Reference Images
+
+When reference images are provided:
+
+- **Style extraction**: Identify rendering technique, line quality, texture, and visual vocabulary
+- **Composition learning**: Note layout patterns, whitespace usage, element placement
+- **Mood matching**: Capture the emotional tone and visual weight
+- **Adaptation**: Apply extracted characteristics while respecting the specified Type, Palette, and Rendering dimensions
+- **Priority**: If reference style conflicts with specified dimensions, dimensions take precedence for structural choices; reference influences decorative details
 
 ---
 

@@ -103,8 +103,8 @@ custom_palettes:
 | Value | Description |
 |-------|-------------|
 | `none` | Pure visual, no text elements |
-| `title-only` | Single headline (≤8 characters) |
-| `title-subtitle` | Title + subtitle (≤15 characters) |
+| `title-only` | Single headline |
+| `title-subtitle` | Title + subtitle |
 | `text-rich` | Title + subtitle + keyword tags (2-4) |
 
 ## Mood Options

@@ -12,8 +12,8 @@ Controls text density and information hierarchy on cover images.
 | Value | Title | Subtitle | Tags | Visual Area |
 |-------|:-----:|:--------:|:----:|:-----------:|
 | `none` | - | - | - | 100% |
-| `title-only` | ✓ (≤8字) | - | - | 85% |
-| `title-subtitle` | ✓ | ✓ (≤15字) | - | 75% |
+| `title-only` | ✓ | - | - | 85% |
+| `title-subtitle` | ✓ | ✓ | - | 75% |
 | `text-rich` | ✓ | ✓ | ✓ (2-4) | 60% |
 
 ## Detail
@@ -43,24 +43,14 @@ Single headline, maximum impact.
 - Strong brand recognition
 
 **Composition**:
-- Title: ≤8 characters, prominent
+- Title: prominent placement
 - Reserved zone: top or bottom 15%
 - Visual supports title message
 
 **Title Guidelines**:
-- Punchy, action-oriented
+- Use exact title from source content or user-provided title
+- Do NOT invent or modify titles
 - Match content language
-- Use engagement hooks (see below)
-
-**Engagement Hooks**:
-
-| Hook Type | Examples (EN) | Examples (ZH) |
-|-----------|---------------|---------------|
-| Numbers | "3 Traps", "5 Keys" | "3个陷阱", "5个关键" |
-| Questions | "Why X?", "How?" | "为什么X?", "怎么做?" |
-| Contrasts | "A vs B", "Old→New" | "A还是B", "旧→新" |
-| Pain Points | "Stop X", "Never Do" | "别再X了", "千万别" |
-| Suspense | "Hidden X", "Secret" | "隐藏的X", "秘密" |
 
 ### title-subtitle
 
@@ -72,14 +62,14 @@ Title with supporting context.
 - Content with dual messages
 
 **Composition**:
-- Title: ≤8 characters, primary
-- Subtitle: ≤15 characters, secondary
+- Title: primary element
+- Subtitle: secondary element
 - Reserved zone: 25%
 - Clear hierarchy between title/subtitle
 
 **Title Guidelines**:
-- Use engagement hooks: numbers, questions, contrasts, pain points, suspense
-- Punchy, action-oriented
+- Use exact title from source content or user-provided title
+- Do NOT invent or modify titles
 
 **Subtitle Guidelines**:
 - Clarify or contextualize title
@@ -104,8 +94,8 @@ Information-dense cover with multiple text elements.
 - Clear visual hierarchy
 
 **Title Guidelines**:
-- Use engagement hooks: numbers, questions, contrasts, pain points, suspense
-- Punchy, action-oriented
+- Use exact title from source content or user-provided title
+- Do NOT invent or modify titles
 
 **Tag Guidelines**:
 - 2-4 tags maximum

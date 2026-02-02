@@ -1,6 +1,6 @@
 ---
 name: baoyu-cover-image
-description: Generates article cover images with 5 dimensions (type, palette, rendering, text, mood) combining 9 color palettes and 6 rendering styles. Supports cinematic (2.35:1), widescreen (16:9), and square (1:1) aspects. Use when user asks to "generate cover image", "create article cover", "make cover", or mentions "封面图".
+description: Generates article cover images with 5 dimensions (type, palette, rendering, text, mood) combining 9 color palettes and 6 rendering styles. Supports cinematic (2.35:1), widescreen (16:9), and square (1:1) aspects. Use when user asks to "generate cover image", "create article cover", or "make cover".
 ---
 
 # Cover Image Generator
@@ -34,6 +34,10 @@ Generate elegant cover images for articles with 5-dimensional customization.
 # Direct input with options
 /baoyu-cover-image --palette mono --rendering digital --aspect 1:1 --quick
 [paste content]
+
+# With reference images
+/baoyu-cover-image article.md --ref style-ref.png
+/baoyu-cover-image article.md --ref ref1.png ref2.png --quick
 ```
 
 ## Options
@@ -50,6 +54,7 @@ Generate elegant cover images for articles with 5-dimensional customization.
 | `--lang <code>` | Title language (en, zh, ja, etc.) |
 | `--no-title` | Alias for `--text none` |
 | `--quick` | Skip confirmation, use auto-selection for missing dimensions |
+| `--ref <files...>` | Reference images for style/composition guidance |
 
 ## Five Dimensions
 
@@ -110,8 +115,8 @@ Rendering definitions: [references/renderings/](references/renderings/)
 | Text Level | Title | Subtitle | Tags | Use Case |
 |------------|:-----:|:--------:|:----:|----------|
 | `none` | - | - | - | Pure visual, no text |
-| `title-only` | ✓ (≤8 字) | - | - | Simple headline (default) |
-| `title-subtitle` | ✓ | ✓ (≤15 字) | - | Title + supporting context |
+| `title-only` | ✓ | - | - | Simple headline (default) |
+| `title-subtitle` | ✓ | ✓ | - | Title + supporting context |
 | `text-rich` | ✓ | ✓ | ✓ (2-4) | Information-dense |
 
 | Mood | Contrast | Saturation | Weight | Use Case |
@@ -142,6 +147,12 @@ Output directory depends on `default_output_dir` preference:
 ```
 <output-dir>/
 ├── source-{slug}.{ext}    # Source files (text, images, etc.)
+├── refs/                  # Reference images (if provided)
+│   ├── ref-01-{slug}.{ext}
+│   ├── ref-01-{slug}.md   # Description file (optional)
+│   ├── ref-02-{slug}.{ext}
+│   ├── ref-02-{slug}.md   # Description file (optional)
+│   └── extracted-style.md # Verbally extracted style (if no file path)
 ├── prompts/cover.md       # Generation prompt
 └── cover.png              # Output image
 ```
@@ -156,25 +167,45 @@ Output directory depends on `default_output_dir` preference:
 
 ```
 Cover Image Progress:
-- [ ] Step 0: Check preferences (EXTEND.md) ⚠️ REQUIRED if not found
-- [ ] Step 1: Analyze content + determine output directory ⚠️ MUST ask if not configured
+- [ ] Step 0: Check preferences (EXTEND.md) ⛔ BLOCKING
+  - [ ] Found → load preferences → continue
+  - [ ] Not found → run first-time setup → MUST complete before Step 1
+- [ ] Step 1: Analyze content + determine output directory
+  - [ ] 1.1 Reference images ⚠️ (if provided)
+    - [ ] File path given → saved to refs/ ✓
+    - [ ] No path → asked user OR extracted verbally
+  - [ ] 1.2 Output directory determined
 - [ ] Step 2: Confirm options (5 dimensions) ⚠️ REQUIRED unless --quick or all specified
 - [ ] Step 3: Create prompt
+  - [ ] References in prompt ONLY if files exist in refs/
+  - [ ] Extracted style/palette appended to prompt body (if no file)
 - [ ] Step 4: Generate image
+  - [ ] 4.1 References verified before generation
+  - [ ] 4.2 Pass refs via --ref if skill supports AND files exist
 - [ ] Step 5: Completion report
 ```
 
 ### Flow
 
 ```
-Input → [Step 0: Preferences/Setup] → Analyze → [Output Dir ⚠️] → [Confirm: 5 Dimensions] → Prompt → Generate → Complete
-                                                                          ↓
-                                                                  (skip if --quick or all specified)
+Input → [Step 0: Preferences] ─┬─ Found → Continue
+                               │
+                               └─ Not found → First-Time Setup ⛔ BLOCKING
+                                              │
+                                              └─ Complete setup → Save EXTEND.md → Continue
+                                                                                      │
+        ┌───────────────────────────────────────────────────────────────────────────┘
+        ↓
+Analyze + Save Refs → [Output Dir ⚠️] → [Confirm: 5 Dimensions] → Prompt → Generate → Complete
+                                                 ↓
+                                        (skip if --quick or all specified)
 ```
 
-### Step 0: Load Preferences (EXTEND.md) ⚠️
+### Step 0: Load Preferences (EXTEND.md) ⛔ BLOCKING
 
-**Purpose**: Load user preferences or run first-time setup. **Do NOT skip setup if EXTEND.md not found.**
+**Purpose**: Load user preferences or run first-time setup.
+
+**CRITICAL**: If EXTEND.md not found, MUST complete first-time setup before ANY other questions or steps. Do NOT proceed to content analysis, do NOT ask about reference images, do NOT ask about dimensions — ONLY complete the preferences setup first.
 
 Use Bash to check EXTEND.md existence (priority order):
 
@@ -189,7 +220,7 @@ test -f "$HOME/.baoyu-skills/baoyu-cover-image/EXTEND.md" && echo "user"
 | Result | Action |
 |--------|--------|
 | Found | Read, parse, display preferences summary → Continue to Step 1 |
-| Not found | ⚠️ MUST run first-time setup ([references/config/first-time-setup.md](references/config/first-time-setup.md)) → Then continue to Step 1 |
+| Not found | ⛔ **BLOCKING**: Run first-time setup ONLY ([references/config/first-time-setup.md](references/config/first-time-setup.md)) → Complete and save EXTEND.md → Then continue to Step 1 |
 
 **Preferences Summary** (when found):
 
@@ -208,11 +239,90 @@ Schema: [references/config/preferences-schema.md](references/config/preferences-
 
 ### Step 1: Analyze Content
 
-1. **Save source content** (if pasted, save to `source.md` in target directory; if file path, use as-is)
-   - **Backup rule**: If `source.md` exists, rename to `source-backup-YYYYMMDD-HHMMSS.md`
-2. **Content analysis**: Extract topic, core message, tone, keywords; identify visual metaphors; detect content type
-3. **Language detection**: Detect source language, note user's input language, compare with EXTEND.md preference
-4. **Determine output directory** per File Structure rules. If no `default_output_dir` preference + file path input, include in Step 2 Q4
+**1.0 Detect & Save Reference Images** ⚠️ REQUIRED if images provided
+
+Check if user provided reference images. Handle based on input type:
+
+| Input Type | Action |
+|------------|--------|
+| Image file path provided | Copy to `refs/` subdirectory → can use `--ref` |
+| Image in conversation (no path) | **ASK user for file path** with AskUserQuestion |
+| User can't provide path | Extract style/palette verbally → append to prompt (NO frontmatter references) |
+
+**CRITICAL**: Only add `references` to prompt frontmatter if files are ACTUALLY SAVED to `refs/` directory.
+
+**If user provides file path**:
+1. Copy to `refs/ref-NN-{slug}.{ext}` (NN = 01, 02, ...)
+2. Create description: `refs/ref-NN-{slug}.md`
+3. Verify files exist before proceeding
+
+**If user can't provide path** (extracted verbally):
+1. Analyze image visually, extract: colors, style, composition
+2. Create `refs/extracted-style.md` with extracted info
+3. DO NOT add `references` to prompt frontmatter
+4. Instead, append extracted style/colors directly to prompt text
+
+**Description File Format** (only when file saved):
+```yaml
+---
+ref_id: NN
+filename: ref-NN-{slug}.{ext}
+usage: direct | style | palette
+---
+[User's description or auto-generated description]
+```
+
+| Usage | When to Use |
+|-------|-------------|
+| `direct` | Reference matches desired output closely |
+| `style` | Extract visual style characteristics only |
+| `palette` | Extract color scheme only |
+
+**Verification** (only for saved files):
+```
+Reference Images Saved:
+- ref-01-{slug}.png ✓ (can use --ref)
+- ref-02-{slug}.png ✓ (can use --ref)
+```
+
+**Or for extracted style**:
+```
+Reference Style Extracted (no file):
+- Colors: #E8756D coral, #7ECFC0 mint...
+- Style: minimal flat vector, clean lines...
+→ Will append to prompt text (not --ref)
+```
+
+---
+
+**1.1 Save Source Content**
+- If pasted, save to `source.md` in target directory; if file path, use as-is
+- **Backup rule**: If `source.md` exists, rename to `source-backup-YYYYMMDD-HHMMSS.md`
+
+**1.2 Content Analysis**
+- Extract topic, core message, tone, keywords
+- Identify visual metaphors
+- Detect content type
+
+**1.3 Reference Image Analysis** (if provided in Step 1.0)
+
+For each reference image:
+
+| Analysis | Description |
+|----------|-------------|
+| Visual characteristics | Style, colors, composition |
+| Content/subject | What the reference depicts |
+| Style match | Which type/palette/rendering align |
+| Usage recommendation | `direct` / `style` / `palette` |
+
+**1.4 Language Detection**
+- Detect source language
+- Note user's input language
+- Compare with EXTEND.md preference
+
+**1.5 Determine Output Directory**
+- Per File Structure rules
+- If no `default_output_dir` preference + file path input, include in Step 2 Q4
 
 ### Step 2: Confirm Options ⚠️
 
@@ -231,12 +341,88 @@ Validate all 5 dimensions + aspect ratio. Full confirmation flow: [references/wo
 
 Save to `prompts/cover.md`. Full template: [references/workflow/prompt-template.md](references/workflow/prompt-template.md)
 
+**CRITICAL - References in YAML Frontmatter**:
+
+When reference files are saved to `refs/`, **MUST add `references` field in frontmatter**:
+
+```yaml
+---
+type: cover
+palette: warm
+rendering: flat-vector
+references:
+  - ref_id: 01
+    filename: refs/ref-01-podcast-thumbnail.jpg
+    usage: style
+---
+```
+
+| Rule | Action |
+|------|--------|
+| Files saved to `refs/` | Add to frontmatter `references` list |
+| Style extracted verbally (no file) | Omit `references` field, describe in body |
+| Before writing | Verify: `test -f refs/ref-NN-{slug}.{ext}` |
+
+**Reference Embedding**:
+
+| Situation | Frontmatter | Body |
+|-----------|-------------|------|
+| Reference file saved to `refs/` | Add to `references` ✓ | Brief style note |
+| Style extracted verbally (no file) | Omit `references` | Full style description |
+| File in frontmatter but doesn't exist | ERROR - fix or remove | — |
+
 ### Step 4: Generate Image
 
-1. Backup existing `cover.png` → `cover-backup-YYYYMMDD-HHMMSS.png` (if regenerating)
-2. Check available image generation skills; if multiple, ask user preference
-3. Call selected skill with prompt file path, output path (`cover.png`), aspect ratio
-4. On failure: auto-retry once before reporting error
+**4.1 Backup existing** `cover.png` → `cover-backup-YYYYMMDD-HHMMSS.png` (if regenerating)
+
+**4.2 Check available image generation skills**; if multiple, ask user preference
+
+**4.3 Process References** ⚠️ REQUIRED if references in frontmatter
+
+**Read `references` from prompt frontmatter** and process each entry:
+
+1. **Parse frontmatter** to get references list:
+   ```yaml
+   references:
+     - ref_id: 01
+       filename: refs/ref-01-podcast-thumbnail.jpg
+       usage: style
+   ```
+
+2. **VERIFY each file exists**:
+   ```bash
+   test -f refs/ref-NN-{slug}.{ext} && echo "exists" || echo "MISSING"
+   ```
+   - If file MISSING → ERROR, fix prompt or remove from references
+   - If file exists → proceed with processing
+
+3. Process based on `usage` type:
+
+| Usage | Action | Example |
+|-------|--------|---------|
+| `direct` | Add reference path to `--ref` parameter | `--ref refs/ref-01-brand.png` |
+| `style` | Analyze reference, append style traits to prompt | "Style: clean lines, gradient backgrounds..." |
+| `palette` | Extract colors from reference, append to prompt | "Colors: #E8756D coral, #7ECFC0 mint..." |
+
+3. Check image generation skill capability:
+
+| Skill Supports `--ref` | Action |
+|------------------------|--------|
+| Yes (e.g., baoyu-image-gen with Google) | Pass reference images via `--ref` |
+| No | Convert to text description, append to prompt |
+
+**Verification**: Before generating, confirm reference processing:
+```
+Reference Processing:
+- ref-01-brand.png: using as direct reference ✓
+- ref-02-style.png: extracted palette ✓
+```
+
+**4.4 Generate**
+
+1. Call selected skill with prompt file path, output path (`cover.png`), aspect ratio
+2. If references with `direct` usage AND skill supports `--ref`: include `--ref` parameter
+3. On failure: auto-retry once before reporting error
 
 ### Step 5: Completion Report
 
@@ -248,10 +434,14 @@ Type: [type] | Palette: [palette] | Rendering: [rendering]
 Text: [text] | Mood: [mood] | Aspect: [ratio]
 Title: [title text or "visual only"]
 Language: [lang] | Watermark: [enabled/disabled]
+References: [N images (direct/style/palette) or "extracted style" or "none"]
 Location: [directory path]
 
 Files:
 ✓ source-{slug}.{ext}
+[✓ refs/ref-01-{slug}.{ext} ... (if references saved)]
+[✓ refs/ref-01-{slug}.md ... (description files)]
+[✓ refs/extracted-style.md (if style extracted verbally)]
 ✓ prompts/cover.md
 ✓ cover.png
 [✓ cover-backup-{timestamp}.png (if regenerated)]
@@ -272,13 +462,26 @@ All modifications automatically backup existing `cover.png` before regenerating.
 
 - Cover must be readable at small preview sizes
 - Visual metaphors > literal representations
-- Title: max 8 chars, readable, impactful
+- Title: readable, impactful
 - Two confirmation points: Step 0 (first-time setup) + Step 2 (options) - skip Step 2 with `--quick`
 - Use confirmed language for title text
 - Maintain watermark consistency if enabled
 - Check compatibility matrices when selecting combinations
 - `--no-title` is alias for `--text none`
 - `--style` presets are backward-compatible; explicit `--palette`/`--rendering` override preset values
+
+### Composition Principles
+
+- **Generous whitespace**: 40-60% breathing room; avoid cluttered layouts
+- **Visual anchor**: Main element centered or offset left (reserve right for title)
+- **Character handling**: Simplified silhouettes or icon-style figures; NO realistic humans
+- **Icon vocabulary**: Use simple, recognizable symbols (see [references/visual-elements.md](references/visual-elements.md))
+
+### Title Handling
+
+- **Source**: Use the exact title provided by user, or extract from source content
+- **Do NOT invent titles**: Stay faithful to the original
+- If no title in source and user doesn't provide one, ask user to specify
 
 ## References
 
@@ -289,5 +492,6 @@ All modifications automatically backup existing `cover.png` before regenerating.
 **Style Presets**: [references/style-presets.md](references/style-presets.md)
 **Compatibility**: [references/compatibility.md](references/compatibility.md)
 **Types**: [references/types.md](references/types.md)
+**Visual Elements**: [references/visual-elements.md](references/visual-elements.md)
 **Workflow**: [confirm-options.md](references/workflow/confirm-options.md) | [prompt-template.md](references/workflow/prompt-template.md)
 **Config**: [preferences-schema.md](references/config/preferences-schema.md) | [first-time-setup.md](references/config/first-time-setup.md) | [watermark-guide.md](references/config/watermark-guide.md)
